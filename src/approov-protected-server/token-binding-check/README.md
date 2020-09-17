@@ -19,7 +19,7 @@ To lock down your API server to your mobile app. Please read the brief summary i
 
 ## How it works?
 
-The Ruby server is very simple and is defined in the file [src/approov-protected-server/token-check/hello-server-protected.rb](src/approov-protected-server/token-check/hello-server-protected.rb). Take a look at the `verifyApproovToken()` function to see the simple code for the check.
+The Ruby server is very simple and is defined in the file [src/approov-protected-server/token-check/hello-server-protected.rb](src/approov-protected-server/token-check/hello-server-protected.rb). Take a look at the verifyApproovToken() and verifyApproovTokenBinding functions to see the simple code for the checks.
 
 For more background on Approov, see the overview in the [README](/README.md#how-it-works) at the root of this repo.
 
@@ -51,3 +51,5 @@ ruby hello-server-protected.rb
 ```
 
 Finally, you can test that the Approov integration example works as expected with this [Postman collection](/README.md#testing-with-postman) or with some cURL requests [examples](/README.md#testing-with-curl).
+
+[TOC](#toc---table-of-contents)

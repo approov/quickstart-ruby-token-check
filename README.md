@@ -93,7 +93,7 @@ The code examples for the Approov quickstarts are extracted from this simple [Ap
 
 ### Testing with Postman
 
-A ready-to-use Postman collection can be found [here](https://raw.githubusercontent.com/approov/postman-collections/master/quickstarts/hello-world/hello-world.postman_collection.rbon). It contains a comprehensive set of example requests to send to the Ruby server for testing. The collection contains requests with valid and invalid Approov tokens, and with and without token binding.
+A ready-to-use Postman collection can be found [here](https://raw.githubusercontent.com/approov/postman-collections/master/quickstarts/hello-world/hello-world.postman_collection.json). It contains a comprehensive set of example requests to send to the Ruby server for testing. The collection contains requests with valid and invalid Approov tokens, and with and without token binding.
 
 ### Testing with Curl
 
@@ -120,6 +120,5 @@ If you wish to explore the Approov solution in more depth, then why not try one 
 * [Approov Support](https://approov.zendesk.com/hc/en-gb/requests/new)
 * [About Us](https://approov.io/company)
 * [Contact Us](https://approov.io/contact)
-
 
 [TOC](#toc---table-of-contents)
