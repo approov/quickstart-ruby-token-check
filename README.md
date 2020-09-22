@@ -53,7 +53,7 @@ You can choose to log JWT verification failures, but we left it out on purpose s
 
 >#### System Clock
 >
->In order to correctly check for the expiration times of the Approov tokens is very important that the Ruby backend server is synchronizing automatically the system clock over the network with an authoritative time source. In Linux this is usual done with a NTP server.
+>In order to correctly check for the expiration times of the Approov tokens is very important that the Ruby backend server is synchronizing automatically the system clock over the network with an authoritative time source. In Linux this is usually done with a NTP server.
 
 [TOC](#toc---table-of-contents)
 

@@ -35,13 +35,20 @@ def verifyApproovToken headers
         return approov_token_claims
     rescue JWT::DecodeError => e
         # You may want to add some logging here
+        return nil
     rescue JWT::ExpiredSignature => e
         # You may want to add some logging here
+        return nil
     rescue JWT::InvalidIssuerError => e
         # You may want to add some logging here
+        return nil
     rescue JWT::InvalidIatError
         # You may want to add some logging here
+        return nil
     end
+
+    # You may want to add some logging here
+    return nil
 end
 
 def requestHeaders connection
