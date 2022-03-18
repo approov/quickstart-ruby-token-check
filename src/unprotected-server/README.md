@@ -42,19 +42,19 @@ To run this example you will need to have Ruby installed. If you don't have then
 
 First, install the `dotenv` package to read the `.env` file.
 
-```text
+```bash
 gem install dotenv
 ```
 
 Now, run this example from the `src/unprotected-server` folder with:
 
-```text
+```bash
 ruby hello-server-unprotected.rb
 ```
 
 Finally, you can test that it works with:
 
-```text
+```bash
 curl -iX GET 'http://localhost:8002'
 ```
 

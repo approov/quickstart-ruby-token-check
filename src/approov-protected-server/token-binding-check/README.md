@@ -7,6 +7,7 @@ This Approov integration example is from where the code example for the [Approov
 * [Why?](#why)
 * [How it Works?](#how-it-works)
 * [Requirements](#requirements)
+* [Setup Env File](#setup-env-file)
 * [Try the Approov Integration Example](#try-the-approov-integration-example)
 
 
@@ -33,22 +34,52 @@ To run this example you will need to have Ruby installed. If you don't have then
 [TOC](#toc---table-of-contents)
 
 
+## Setup Env File
+
+From `/src/approov-protected-server/token-check` execute the following:
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file and add the [dummy secret](/README.md#the-dummy-secret) to it in order to be able to test the Approov integration with the provided [Postman collection](https://github.com/approov/postman-collections/blob/master/quickstarts/hello-world/hello-world.postman_curl_requests_examples.md).
+
+[TOC](#toc---table-of-contents)
+
+
 ## Try the Approov Integration Example
 
 First, you need to set the dummy secret in the `src/approov-protected-server/token-check/.env` file as explained [here](/README.md#the-dummy-secret).
 
 Second, you need to install the dependencies. From the `src/approov-protected-server/token-check` folder execute:
 
-```text
-gem install dotenv
-gem install jwt
+```bash
+gem install dotenv jwt
 ```
 
 Now, you can run this example from the `src/approov-protected-server/token-check` folder with:
 
-```text
+```bash
 ruby hello-server-protected.rb
 ```
+
+Next, you can test that it works with:
+
+```bash
+curl -iX GET 'http://localhost:8002'
+```
+
+The response will be a `401` unauthorized request:
+
+```text
+HTTP/1.1 401
+Content-Type: application/json
+Content-Length: 2
+
+{}
+```
+
+The reason you got a `401` is because no Approoov token isn't provided in the headers of the request.
 
 Finally, you can test that the Approov integration example works as expected with this [Postman collection](/README.md#testing-with-postman) or with some cURL requests [examples](/README.md#testing-with-curl).
 

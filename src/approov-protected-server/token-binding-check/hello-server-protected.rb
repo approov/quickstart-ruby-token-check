@@ -52,13 +52,9 @@ def verifyApproovToken headers
 end
 
 def verifyApproovTokenBinding headers, approov_token_claims
-    # Note that the `pay` claim will, under normal circumstances, be present,
-    # but if the Approov failover system is enabled, then no claim will be
-    # present, and in this case you want to return true, otherwise you will not
-    # be able to benefit from the redundancy afforded by the failover system.
     if not approov_token_claims['pay']
         # You may want to add some logging here
-        return true
+        return false
     end
 
     # We use the Authorization token, but feel free to use another header in
