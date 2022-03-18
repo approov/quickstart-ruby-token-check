@@ -1,0 +1,37 @@
+version: "2.3"
+
+services:
+
+  unprotected-server:
+    image: approov/ruby:3.1
+    build: ./
+    networks:
+      - default
+    command: bash -c "ruby hello-server-unprotected.rb"
+    ports:
+      - ${HOST_IP:-127.0.0.1}:${HTTP_PORT:-8002}:${HTTP_PORT:-8002}
+    volumes:
+      - ./src/unprotected-server:/home/python/workspace
+
+  approov-token-check:
+    image: approov/ruby:3.1
+    build: ./
+    networks:
+      - default
+    command: bash -c "ruby hello-server-protected.rb"
+    ports:
+      - ${HOST_IP:-127.0.0.1}:${HTTP_PORT:-8002}:${HTTP_PORT:-8002}
+    volumes:
+      - ./src/approov-protected-server/token-check:/home/python/workspace
+
+  approov-token-binding-check:
+    image: approov/ruby:3.1
+    build: ./
+    networks:
+      - default
+    command: bash -c "ruby hello-server-protected.rb"
+    ports:
+      - ${HOST_IP:-127.0.0.1}:${HTTP_PORT:-8002}:${HTTP_PORT:-8002}
+    volumes:
+      - ./src/approov-protected-server/token-binding-check:/home/python/workspace
+
