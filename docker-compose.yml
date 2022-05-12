@@ -11,7 +11,7 @@ services:
     ports:
       - ${HOST_IP:-127.0.0.1}:${HTTP_PORT:-8002}:${HTTP_PORT:-8002}
     volumes:
-      - ./src/unprotected-server:/home/python/workspace
+      - ./src/unprotected-server:/home/developer/workspace
 
   approov-token-check:
     image: approov/ruby:3.1
@@ -22,7 +22,7 @@ services:
     ports:
       - ${HOST_IP:-127.0.0.1}:${HTTP_PORT:-8002}:${HTTP_PORT:-8002}
     volumes:
-      - ./src/approov-protected-server/token-check:/home/python/workspace
+      - ./src/approov-protected-server/token-check:/home/developer/workspace
 
   approov-token-binding-check:
     image: approov/ruby:3.1
@@ -33,5 +33,5 @@ services:
     ports:
       - ${HOST_IP:-127.0.0.1}:${HTTP_PORT:-8002}:${HTTP_PORT:-8002}
     volumes:
-      - ./src/approov-protected-server/token-binding-check:/home/python/workspace
+      - ./src/approov-protected-server/token-binding-check:/home/developer/workspace
 
