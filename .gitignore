@@ -1,1 +1,29 @@
-.env
+# Bundler and dependencies
+/.bundle/
+/vendor/bundle/
+
+# Environment and secrets
+/.env
+/.env.*
+!/.env.example
+
+# Logs and temp files
+*.log
+/log/
+/tmp/
+
+# Test and coverage artifacts
+/coverage/
+
+# OS files
+.DS_Store
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.ruby-version
+.ruby-gemset
+.config/

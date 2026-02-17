@@ -1,165 +1,259 @@
-# Approov QuickStart - Ruby Token Check
+# Approov Backend Quickstart - Ruby
 
-[Approov](https://approov.io) is an API security solution used to verify that requests received by your backend services originate from trusted versions of your mobile apps.
+This project provides a server-side example of Approov token verification for a protected backend API. It exposes a simple API that verifies Approov tokens before granting access to protected endpoints and demonstrates how the endpoints behave under the current Approov configuration:
 
-This repo implements the Approov server-side request verification code in Ruby (framework agnostic), which performs the verification check before allowing valid traffic to be processed by the API endpoint.
+ - `/unprotected` - no Approov token required.
+ - `/token-check` - requires a valid Approov token.
+ - `/token-binding` - requires a valid Approov token which is bound to a header value.
+ - `/token-double-binding` - requires a valid Approov token which is bound to two header values.
 
+In this example, Approov token checks are implemented in `ApproovApplication.rb`. The responsibilities break down as follows:
 
-## Approov Integration Quickstart
+1. **JWT Approov token validation (signature + expiration)** is implemented in [`TokenValidator#verify_approov_token`](./ApproovApplication.rb#L219-L248).
+It verifies the HS256 signature and rejects tokens that are missing `exp` or are already expired.
 
-The quickstart was tested with the following Operating Systems:
+2. **Token binding (`pay` + hash)** is handled by [`TokenValidator#verify_token_binding`](./ApproovApplication.rb#L251-L270) with hashing in [`TokenValidator#token_binding_hash`](./ApproovApplication.rb#L281-L284).
+It computes `Base64.strict_encode64(SHA256(binding_value))` and compares it against the `pay` claim.
 
-* Ubuntu 20.04
-* MacOS Big Sur
-* Windows 10 WSL2 - Ubuntu 20.04
+3. **Middleware enforcement** is done by [`ApproovMiddleware#call`](./ApproovApplication.rb#L388-L418).
+Requests without a valid token or valid binding are rejected with `401 Unauthorized`.
 
-First, setup the [Approov CLI](https://approov.io/docs/latest/approov-installation/index.html#initializing-the-approov-cli).
+4. **Binding value selection (what gets hashed)** is implemented in [`TokenValidator#binding_value_for`](./ApproovApplication.rb#L274-L279).
+It uses the headers configured in [`PROTECTED_ROUTES`](./ApproovApplication.rb#L35-L39): `Authorization` for single binding, and `Authorization` + `SessionId` for double binding.
 
-Now, register the API domain for which Approov will issues tokens:
+5. **Protected route requirements** are defined in [`PROTECTED_ROUTES`](./ApproovApplication.rb#L35-L39).
+
+6. **Protected routes are registered** in [`ApiRouter#call`](./ApproovApplication.rb#L312-L349).
+
+## Approov Token Verification Flow
+
+1. **Token Request:**  
+   The Approov SDK inside the mobile app securely communicates with the Approov Cloud Service to obtain a short-lived [Approov Token](https://ext.approov.io/docs/latest/approov-usage-documentation/#approov-tokens) (a signed JWT).  
+   Additionally, you can use the CLI [token commands](https://ext.approov.io/docs/latest/approov-cli-tool-reference/#token-commands) to validate tokens, generate new ones, and set the data hash.
+
+2. **Token Attachment:**  
+   The app attaches this token to every API request using the `Approov-Token` HTTP header.
+
+3. **Server Validation:**  
+   The [server verifies](https://ext.approov.io/docs/latest/approov-usage-documentation/#approov-architecture) the token using the shared Approov secret, checking its:
+    - Signature authenticity
+    - Expiration (`exp` claim)
+    - Other claims if configured
+
+4. **Token Binding (Optional):**  
+   [Token binding](https://ext.approov.io/docs/latest/approov-usage-documentation/#token-binding) is configured by the app via the Approov SDK, which hashes a chosen binding value (for example the `Authorization` header) and embeds it into the Approov token.  
+   The protected API then computes the same hash from the incoming request and verifies that it matches the `pay` claim, preventing token reuse or replay attacks. For local testing, you can also generate example tokens with a binding using the Approov CLI.
+
+5. **Request Decision:**   
+      If all checks pass → the request is trusted and processed `200 OK`.   
+      If validation fails → the server responds with `401 Unauthorized`.
+
+## Requirements:
+
+1. ***Approov account*** - If you're new, sign up for an [Approov trial account](https://approov.io/signup).
+2. ***Approov CLI initialized*** - Follow the [installation guide](https://ext.approov.io/docs/latest/approov-installation/#initializing-the-approov-cli) and confirm `approov whoami` works.
+3. ***Install curl*** - Ensure the `curl` CLI is available.
+4. ***Create .env file*** - copy `.env.example` so there is a place to store the secret key.
+    ```bash
+    cp .env.example .env
+    ```
+
+5. ***Configure secret*** - fetch the secret and add it to `.env` (`APPROOV_BASE64URL_SECRET`):
+   ```bash
+   approov secret -get base64url
+   ```
+
+6. ***Register API domain*** - point Approov at your backend API (default example.com):
+   ```bash
+   approov api -add example.com
+   ```
+
+7. ***Install Docker and Docker Compose*** - follow the official guide: [Docker docs](https://docs.docker.com/get-started/get-docker/)
+
+## Try it yourself using Docker
+
+*If you have all requirements, you can run*
 
 ```bash
-approov api -add api.example.com
+bash run-server.sh
 ```
 
-> **NOTE:** By default a symmetric key (HS256) is used to sign the Approov token on a valid attestation of the mobile app for each API domain it's added with the Approov CLI, so that all APIs will share the same secret and the backend needs to take care to keep this secret secure.
->
-> A more secure alternative is to use asymmetric keys (RS256 or others) that allows for a different keyset to be used on each API domain and for the Approov token to be verified with a public key that can only verify, but not sign, Approov tokens.
->
-> To implement the asymmetric key you need to change from using the symmetric HS256 algorithm to an asymmetric algorithm, for example RS256, that requires you to first [add a new key](https://approov.io/docs/latest/approov-usage-documentation/#adding-a-new-key), and then specify it when [adding each API domain](https://approov.io/docs/latest/approov-usage-documentation/#keyset-key-api-addition). Please visit [Managing Key Sets](https://approov.io/docs/latest/approov-usage-documentation/#managing-key-sets) on the Approov documentation for more details.
+This script:
+- Builds and starts the container via `scripts/build.sh` (`docker build` + `docker run`) and waits for `/approov-state` to be ready.
 
-Next, enable your Approov `admin` role with:
+*Once finished, press `Ctrl+C` to stop log tailing; the container keeps running unless you stop it. Use `docker ps` to find the container name and `docker stop <container_name>` to stop it.*
+
+### Automated and Manual Testing
+
+*When the server is running (in a different terminal), validate the endpoints via the automated bash script or by running the manual checks below*
 
 ```bash
-eval `approov role admin`
-````
+bash test.sh
+```
 
-For the Windows powershell:
+This script:
+- Verifies that the `approov` and `curl` commands are installed.
+- Checks Approov status by calling `/approov-state` (enabled vs disabled).
+- Runs endpoint tests against `/unprotected` (no token), `/token-check` (valid/invalid Approov tokens), `/token-binding` (token bound to `Authorization`), and `/token-double-binding` (token bound to `Authorization` + `SessionId`).
+- Logs full request/response details to `.config/logs/<timestamp>.log`.
+
+#### *1. Unprotected Endpoint (No Approov)*
+
+- The client sends a normal HTTP request.
+- The server **does not verify** any Approov token or extra authentication header.
+- This means **any client** (even tampered or unauthorized) can call the API if they know the URL.
+
+*The following example shows how the API responds when no Approov protection is applied.*
 
 ```bash
-set APPROOV_ROLE=admin:___YOUR_APPROOV_ACCOUNT_NAME_HERE___
+curl -iX GET http://localhost:8080/unprotected
 ```
 
-Now, get your Approov Secret with the [Approov CLI](https://approov.io/docs/latest/approov-installation/index.html#initializing-the-approov-cli):
+The response will be `200 OK` for this request:
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-cache
+```
+
+#### *2. Approov Token Check*
+
+- The client includes an `Approov-Token` (a short-lived JWT) in each API request header.
+- The server verifies this token using the **Approov secret key** that is securely configured on the backend and checks:
+    -  Token verification - confirms the token is signed by the Approov secret.
+    -  Expiration (`exp` claim) - ensures the token is still valid.
+- If the token is valid → request is trusted.
+- If invalid → server returns `401 Unauthorized`.
+- **Purpose**: Protect API endpoints so that only authentic, unmodified Approov-integrated apps can access them.
+
+***The following example shows how the API responds when an Approov token is required.***
+
+*Generate a valid Approov token:*
 
 ```bash
-approov secret -get base64
+approov token -genExample example.com
 ```
 
-Next, add the [Approov secret](https://approov.io/docs/latest/approov-usage-documentation/#account-secret-key-export) to your project `.env` file:
-
-```env
-APPROOV_BASE64_SECRET=approov_base64_secret_here
-```
-
-Now, to check the Approov token we will use the [jwt/ruby-jwt](https://github.com/jwt/ruby-jwt) package, that you can install with:
+*Use the generated token in the `Approov-Token` header and `/token-check` endpoint.*
 
 ```bash
-gem install jwt
+curl -iX GET http://localhost:8080/token-check \
+     -H "Approov-Token: valid_approov_token_here"
 ```
 
-> **NOTE:** If you are not using yet the `dotenv` package then you also nee to add it to the install command.
+The response will be `200 OK` for this request:
 
-Next, add this code to your project:
-
-```ruby
-require 'dotenv'
-require 'jwt'
-require 'base64'
-
-env = Dotenv.parse(".env")
-
-if not env['HTTP_PORT']
-    env['HTTP_PORTP'] = 8002
-end
-
-if not env['SERVER_HOSTNAME']
-    env['SERVER_HOSTNAME'] = '127.0.0.1'
-end
-
-if not env['APPROOV_BASE64_SECRET']
-    raise "Missing in the .env file the value for the variable: APPROOV_BASE64_SECRET"
-end
-
-APPROOV_SECRET = Base64.decode64(env['APPROOV_BASE64_SECRET'])
-
-def verifyApproovToken headers
-    begin
-        approov_token = headers['approov-token']
-
-        if not approov_token
-            # You may want to add some logging here
-            return nil
-        end
-
-        options = { algorithm: 'HS256' }
-        approov_token_claims, header = JWT.decode approov_token, APPROOV_SECRET, true, options
-
-        return approov_token_claims
-    rescue JWT::DecodeError => e
-        # You may want to add some logging here
-        return nil
-    rescue JWT::ExpiredSignature => e
-        # You may want to add some logging here
-        return nil
-    rescue JWT::InvalidIssuerError => e
-        # You may want to add some logging here
-        return nil
-    rescue JWT::InvalidIatError
-        # You may want to add some logging here
-        return nil
-    end
-
-    # You may want to add some logging here
-    return nil
-end
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-cache
 ```
 
-Now you just need to invoke `verifyApproovToken()` function for the endpoints you want to protected:
+*If you use an invalid or missing token, the server will respond with `401 Unauthorized`.*
 
-```ruby
-if not approov_token_claims = verifyApproovToken(headers)
-    sendResponse(connection, 401, JSON.generate({}))
-    next
-end
+#### *3. Approov Token Binding Check*
+
+- The client sends two headers on authenticated API calls:
+    - `Approov-Token`
+    - `Authorization` – your auth token value (e.g., `ExampleAuthToken==`)
+- The server verifies the token and ensures that the bound value matches what the app used.
+- Prevents token replay - the Approov token cannot be reused or stolen for another session.
+- **Use case:** Stronger protection for authenticated API calls tied to a specific user or device.
+
+***The following example shows how the API responds when an Approov token with binding is required.***
+
+*Generate a valid Approov token bound to the `Authorization` header:*
+
+```bash
+approov token -setDataHashInToken ExampleAuthToken== -genExample example.com
 ```
 
-> **NOTE:** When the Approov token validation fails we return a `401` with an empty body, because we don't want to give clues to an attacker about the reason the request failed, and you can go even further by returning a `400`.
+*Use the generated token with binding in the Approov-Token and Authorization headers when calling the /token-binding endpoint.*
 
-Not enough details in the bare bones quickstart? No worries, check the [detailed quickstarts](QUICKSTARTS.md) that contain a more comprehensive set of instructions, including how to test the Approov integration.
+```bash
+curl -iX GET http://localhost:8080/token-binding \
+     -H "Approov-Token: valid_approov_token_here" \
+     -H "Authorization: ExampleAuthToken=="
+```
 
+The response will be `200 OK` for this request:
 
-## More Information
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-cache
+```
 
-* [Approov Overview](OVERVIEW.md)
-* [Detailed Quickstarts](QUICKSTARTS.md)
-* [Examples](EXAMPLES.md)
-* [Testing](TESTING.md)
+*If you use an invalid or missing header or token, the server will respond with `401 Unauthorized`.*
 
-### System Clock
+#### Approov Token Binding Check with Two Different Bound Values
 
-In order to correctly check for the expiration times of the Approov tokens is very important that the backend server is synchronizing automatically the system clock over the network with an authoritative time source. In Linux this is usually done with a NTP server.
+- The client sends three headers on authenticated API calls:
+    - `Approov-Token`
+    - `Authorization`
+    - `SessionId` It is combined with the `Authorization` header to create a stronger binding.
+- Both are included in the hash inside the Approov token. This means the server verifies a single hash that covers both authentication credentials.
+- **Use case:** Stronger protection then single binding by tying both headers together.
 
-### System Clock
+***The following example shows how the API responds when an Approov token with two bindings is required.***
 
-In order to correctly check for the expiration times of the Approov tokens is very important that the backend server is synchronizing automatically the system clock over the network with an authoritative time source. In Linux this is usually done with a NTP server.
+*Generate a valid Approov token bound to the `Authorization` and `SessionId` headers:*
 
+```bash
+approov token -setDataHashInToken ExampleAuthToken==123 -genExample example.com
+```
 
-## Issues
+*Use the generated token with two bindings in the Approov-Token and Authorization headers when calling the `/token-double-binding` endpoint.*
 
-If you find any issue while following our instructions then just report it [here](https://github.com/approov/quickstart-ruby-token-check/issues), with the steps to reproduce it, and we will sort it out and/or guide you to the correct path.
+```bash
+curl -iX GET http://localhost:8080/token-double-binding \
+     -H "Approov-Token: valid_approov_token_here" \
+     -H "Authorization: ExampleAuthToken==" \
+     -H "SessionId: 123"
+```
 
+The response will be `200 OK` for this request.
+
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-cache
+```
+
+*If you use an invalid or missing header or token, the server will respond with `401 Unauthorized`.*
+
+## Enable or Disable Approov Protection      
+
+When the example server is running on `localhost:8080`, you can toggle Approov protection with these commands:
+
+```bash
+curl -X POST http://localhost:8080/approov/disable    # disable the Approov service
+
+curl -X POST http://localhost:8080/approov/enable     # enable the Approov service
+
+curl -X GET http://localhost:8080/approov-state       # check current state
+```
+
+*You can rerun the tests with Approov disabled to observe how the application behaves when the Approov protection is ***no longer active***.*
+
+## Reporting Issues
+
+**Environments where the quickstart was tested:**
+```text
+* Runtime: {{RUNTIME_VERSION}}
+* Framework: {{LANGUAGE}} {{FRAMEWORK}}
+* Build Tool: {{BUILD_TOOL}} {{BUILD_TOOL_VERSION}}
+```
+
+If you encounter any problems while following this guide, or have any other concerns, please let us know by opening an issue [here](https://github.com/approov/quickstart-ruby-token-check/issues) and we will be happy to assist you.
 
 ## Useful Links
 
-If you wish to explore the Approov solution in more depth, then why not try one of the following links as a jumping off point:
-
-* [Approov Free Trial](https://approov.io/signup)(no credit card needed)
-* [Approov Get Started](https://approov.io/product/demo)
-* [Approov QuickStarts](https://approov.io/docs/latest/approov-integration-examples/)
-* [Approov Docs](https://approov.io/docs)
-* [Approov Blog](https://approov.io/blog/)
+* [Approov QuickStarts](https://approov.io/resource/quickstarts/)
+* [Approov Docs](https://ext.approov.io/docs)
+* [Approov Blog](https://approov.io/blog)
 * [Approov Resources](https://approov.io/resource/)
 * [Approov Customer Stories](https://approov.io/customer)
-* [Approov Support](https://approov.io/contact)
+* [Approov Support](https://approov.io/info/technical-support)
 * [About Us](https://approov.io/company)
-* [Contact Us](https://approov.io/contact)
+* [Contact Us](https://approov.io/info/contact)

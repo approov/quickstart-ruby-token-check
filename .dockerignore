@@ -1,0 +1,27 @@
+# Sensitive/local environment files
+.env
+.env.local
+.env.*.local
+
+# VCS and editor metadata
+.git
+.gitignore
+.idea
+.vscode
+*.iml
+
+# OS junk
+.DS_Store
+**/.DS_Store
+
+# Local runtime artifacts
+*.log
+.config
+.local
+
+# Misc local files
+*.swp
+*.swo
+.DS_Store
+.config/
+
