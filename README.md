@@ -9,21 +9,21 @@ This project provides a server-side example of Approov token verification for a 
 
 In this example, Approov token checks are implemented in `ApproovApplication.rb`. The responsibilities break down as follows:
 
-1. **JWT Approov token validation (signature + expiration)** is implemented in [`TokenValidator#verify_approov_token`](./ApproovApplication.rb#L219-L248).
+1. **JWT Approov token validation (signature + expiration)** is implemented in [TokenValidator#verify_approov_token](https://github.com/approov/quickstart-ruby-token-check/blob/refactor/ruby-quickstart/ApproovApplication.rb#L219-L248).
 It verifies the HS256 signature and rejects tokens that are missing `exp` or are already expired.
 
-2. **Token binding (`pay` + hash)** is handled by [`TokenValidator#verify_token_binding`](./ApproovApplication.rb#L251-L270) with hashing in [`TokenValidator#token_binding_hash`](./ApproovApplication.rb#L281-L284).
+2. **Token binding (`pay` + hash)** is handled by [TokenValidator#verify_token_binding](https://github.com/approov/quickstart-ruby-token-check/blob/refactor/ruby-quickstart/ApproovApplication.rb#L251-L270) with hashing in [TokenValidator#token_binding_hash](https://github.com/approov/quickstart-ruby-token-check/blob/refactor/ruby-quickstart/ApproovApplication.rb#L281-L284).
 It computes `Base64.strict_encode64(SHA256(binding_value))` and compares it against the `pay` claim.
 
-3. **Middleware enforcement** is done by [`ApproovMiddleware#call`](./ApproovApplication.rb#L388-L418).
+3. **Middleware enforcement** is done by [ApproovMiddleware#call](./ApproovApplication.rb#L388-L418).
 Requests without a valid token or valid binding are rejected with `401 Unauthorized`.
 
-4. **Binding value selection (what gets hashed)** is implemented in [`TokenValidator#binding_value_for`](./ApproovApplication.rb#L274-L279).
-It uses the headers configured in [`PROTECTED_ROUTES`](./ApproovApplication.rb#L35-L39): `Authorization` for single binding, and `Authorization` + `SessionId` for double binding.
+4. **Binding value selection (what gets hashed)** is implemented in [TokenValidator#binding_value_for](https://github.com/approov/quickstart-ruby-token-check/blob/refactor/ruby-quickstart/ApproovApplication.rb#L274-L279).
+It uses the headers configured in `PROTECTED_ROUTES`. `Authorization` for single binding, and `Authorization` + `SessionId` for double binding.
 
-5. **Protected route requirements** are defined in [`PROTECTED_ROUTES`](./ApproovApplication.rb#L35-L39).
+5. **Protected route requirements** are defined in [PROTECTED_ROUTES](https://github.com/approov/quickstart-ruby-token-check/blob/refactor/ruby-quickstart/ApproovApplication.rb#L35-L39).
 
-6. **Protected routes are registered** in [`ApiRouter#call`](./ApproovApplication.rb#L312-L349).
+6. **Protected routes are registered** in [ApiRouter#call](https://github.com/approov/quickstart-ruby-token-check/blob/refactor/ruby-quickstart/ApproovApplication.rb#L312-L349).
 
 ## Approov Token Verification Flow
 
@@ -240,9 +240,8 @@ curl -X GET http://localhost:8080/approov-state       # check current state
 
 **Environments where the quickstart was tested:**
 ```text
-* Runtime: {{RUNTIME_VERSION}}
-* Framework: {{LANGUAGE}} {{FRAMEWORK}}
-* Build Tool: {{BUILD_TOOL}} {{BUILD_TOOL_VERSION}}
+* Runtime: Ruby 4.0.1
+* Build Tool: Bundler 4.0.3
 ```
 
 If you encounter any problems while following this guide, or have any other concerns, please let us know by opening an issue [here](https://github.com/approov/quickstart-ruby-token-check/issues) and we will be happy to assist you.

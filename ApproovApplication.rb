@@ -38,7 +38,7 @@ module ApproovApplication
     ProtectedRoute.new(path: '/token-double-binding', bound_headers: ['Authorization', 'SessionId'])
   ].freeze
 
-  class ValidationError
+  class ValidationFailure
     attr_reader :reason, :message, :exception
 
     def initialize(reason:, message: nil, exception: nil)
@@ -68,7 +68,7 @@ module ApproovApplication
     def self.failure(required_headers, reason:, message: nil, exception: nil)
       new(
         required_headers: required_headers,
-        error: ValidationError.new(reason: reason, message: message, exception: exception)
+        error: ValidationFailure.new(reason: reason, message: message, exception: exception)
       )
     end
   end
